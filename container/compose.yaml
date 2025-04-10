@@ -3,10 +3,18 @@ services:
     image: sknnr/palworld-dedicated-server:latest
     ports:
       - "8211:8211/udp"
-    env_file:
-      - default.env
+      - "8000:8000/tcp"
+    environment:
+      - SERVER_NAME=Palworld Containerized Server
+      - SERVER_PASSWORD=PleaseChangeMe
+      - GAME_PORT=8211
+      - SERVER_SLOTS=32
+      - API_ENABLED=true
+      - API_PORT=8000
+      - API_KEY=your_secure_api_key_here
     volumes:
       - palworld-persistent-data:/home/steam/palworld/Pal/Saved
+    restart: unless-stopped
 
 volumes:
   palworld-persistent-data:

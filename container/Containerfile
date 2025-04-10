@@ -1,4 +1,7 @@
-FROM debian:12
+FROM debian:12-slim
+
+ARG IMAGE_VERSION="v1.0.0"
+ARG MAINTAINER="https://github.com/jsknnr/palworld-server"
 
 ARG CONTAINER_GID=10000
 ARG CONTAINER_UID=10000
@@ -6,26 +9,37 @@ ARG CONTAINER_UID=10000
 ENV DEBIAN_FRONTEND "noninteractive"
 ENV PALWORLD_PATH "/home/steam/palworld"
 ENV PALWORLD_CONFIG "${PALWORLD_PATH}/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini"
+ENV HOME "/home/steam"
 
 RUN groupadd -g $CONTAINER_GID steam \
     && useradd -g $CONTAINER_GID -u $CONTAINER_UID -m steam \
     && dpkg --add-architecture i386 \
     && apt-get update \
-    && apt-get install -y \
+    && apt-get install --no-install-recommends -y \
         ca-certificates \
         curl \
-        lib32gcc-s1
+        lib32gcc-s1 \
+        procps \
+        wget \
+        net-tools \
+        jq \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get autoremove -y
 
 USER steam
-
-COPY entrypoint.sh /home/steam/entrypoint.sh
 
 RUN mkdir "$PALWORLD_PATH" \
     && mkdir -p "$PALWORLD_PATH"/Pal/Saved \
     && mkdir /home/steam/steamcmd \
     && mkdir -p /home/steam/.steam/sdk64 \
     && curl -sqL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar zxvf - -C /home/steam/steamcmd \
-    && chmod +x /home/steam/steamcmd/steamcmd.sh 
+    && chmod +x /home/steam/steamcmd/steamcmd.sh \
+    && echo "${IMAGE_VERSION}" > /home/steam/image_version \
+    && echo "${MAINTAINER}" > /home/steam/image_maintainer \
+    && echo "${CONTAINER_UID}:${CONTAINER_GID}" > /home/steam/expected_filesystem_permissions
+
+COPY entrypoint.sh /home/steam/entrypoint.sh
 
 WORKDIR /home/steam
 
