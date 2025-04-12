@@ -5,13 +5,31 @@ services:
       - "8211:8211/udp"
       - "8000:8000/tcp"
     environment:
+      # Server settings
       - SERVER_NAME=Palworld Containerized Server
       - SERVER_PASSWORD=PleaseChangeMe
       - GAME_PORT=8211
       - SERVER_SLOTS=32
+      
+      # API settings
       - API_ENABLED=true
       - API_PORT=8000
       - API_KEY=your_secure_api_key_here
+      
+      # Backup settings
+      - BACKUP_ENABLED=false
+      - BACKUP_REPOSITORY=
+      - BACKUP_PASSWORD=
+      - BACKUP_SCHEDULE=0 0 * * *
+      - BACKUP_RETENTION_DAYS=7
+      - BACKUP_PATHS=/home/steam/palworld/Pal/Saved
+      - BACKUP_EXCLUDE=
+      - BACKUP_BEFORE_UPDATE=true
+      
+      # Auto-update settings
+      - AUTO_UPDATE_ENABLED=false
+      - AUTO_UPDATE_SCHEDULE=0 */4 * * *
+
     volumes:
       - palworld-persistent-data:/home/steam/palworld/Pal/Saved
     restart: unless-stopped

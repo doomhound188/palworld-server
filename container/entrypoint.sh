@@ -100,6 +100,47 @@ if [ -z "$API_KEY" ]; then
     echo "$(timestamp) WARN: Store this key for external API access!"
 fi
 
+# Set default backup values if not provided
+if [ -z "$BACKUP_ENABLED" ]; then
+    BACKUP_ENABLED="false"
+    echo "$(timestamp) INFO: BACKUP_ENABLED not set, using default: false"
+fi
+
+if [ "$BACKUP_ENABLED" == "true" ] && [ -z "$BACKUP_REPOSITORY" ]; then
+    echo "$(timestamp) WARN: BACKUP_ENABLED is true but BACKUP_REPOSITORY is not set. Backups will fail!"
+fi
+
+if [ -z "$BACKUP_SCHEDULE" ]; then
+    BACKUP_SCHEDULE="0 0 * * *"
+    echo "$(timestamp) INFO: BACKUP_SCHEDULE not set, using default: 0 0 * * * (daily at midnight)"
+fi
+
+if [ -z "$BACKUP_RETENTION_DAYS" ]; then
+    BACKUP_RETENTION_DAYS="7"
+    echo "$(timestamp) INFO: BACKUP_RETENTION_DAYS not set, using default: 7 days"
+fi
+
+if [ -z "$BACKUP_PATHS" ]; then
+    BACKUP_PATHS="/home/steam/palworld/Pal/Saved"
+    echo "$(timestamp) INFO: BACKUP_PATHS not set, using default: ${BACKUP_PATHS}"
+fi
+
+if [ -z "$BACKUP_BEFORE_UPDATE" ]; then
+    BACKUP_BEFORE_UPDATE="true"
+    echo "$(timestamp) INFO: BACKUP_BEFORE_UPDATE not set, using default: true"
+fi
+
+# Set default auto-update values if not provided
+if [ -z "$AUTO_UPDATE_ENABLED" ]; then
+    AUTO_UPDATE_ENABLED="false"
+    echo "$(timestamp) INFO: AUTO_UPDATE_ENABLED not set, using default: false"
+fi
+
+if [ -z "$AUTO_UPDATE_SCHEDULE" ]; then
+    AUTO_UPDATE_SCHEDULE="0 */4 * * *"
+    echo "$(timestamp) INFO: AUTO_UPDATE_SCHEDULE not set, using default: 0 */4 * * * (every 4 hours)"
+fi
+
 # Check for proper save permissions
 if ! touch "${PALWORLD_PATH}/Pal/Saved/test"; then
     echo ""
@@ -111,6 +152,24 @@ if ! touch "${PALWORLD_PATH}/Pal/Saved/test"; then
 fi
 
 rm "${PALWORLD_PATH}/Pal/Saved/test"
+
+# Setup backup cron job if enabled
+if [ "${BACKUP_ENABLED}" == "true" ]; then
+    echo "$(timestamp) INFO: Setting up backup cron job..."
+    # Ensure scripts have execute permissions
+    chmod +x /home/steam/backup-scripts/backup.sh
+    chmod +x /home/steam/backup-scripts/setup-backup-cron.sh
+    /home/steam/backup-scripts/setup-backup-cron.sh
+fi
+
+# Setup auto-update cron job if enabled
+if [ "${AUTO_UPDATE_ENABLED}" == "true" ]; then
+    echo "$(timestamp) INFO: Setting up auto-update cron job..."
+    # Ensure scripts have execute permissions
+    chmod +x /home/steam/update-scripts/check-update.sh
+    chmod +x /home/steam/update-scripts/setup-update-cron.sh
+    /home/steam/update-scripts/setup-update-cron.sh
+fi
 
 # Install/Update Palworld
 echo "$(timestamp) INFO: Updating Palworld Dedicated Server"
@@ -188,6 +247,12 @@ else
     echo "$(timestamp) INFO: API disabled by configuration"
 fi
 
+# Start crond service for backups and auto-updates
+if [ "${BACKUP_ENABLED}" == "true" ] || [ "${AUTO_UPDATE_ENABLED}" == "true" ]; then
+    echo "$(timestamp) INFO: Starting cron service for scheduled tasks"
+    crond
+fi
+
 echo ""
 echo " ____       _                      _     _ "
 echo "|  _ \ __ _| |_      _____  _ _ __| | __| |"
@@ -205,6 +270,14 @@ echo "API Enabled: ${API_ENABLED}"
 if [[ "${API_ENABLED}" == "true" ]]; then
     echo "API Port: ${API_PORT}"
     echo "API Key: ${API_KEY}"
+fi
+if [[ "${BACKUP_ENABLED}" == "true" ]]; then
+    echo "Backup Schedule: ${BACKUP_SCHEDULE}"
+    echo "Backup Repository: ${BACKUP_REPOSITORY}"
+    echo "Backup Retention: ${BACKUP_RETENTION_DAYS} days"
+fi
+if [[ "${AUTO_UPDATE_ENABLED}" == "true" ]]; then
+    echo "Auto Update Schedule: ${AUTO_UPDATE_SCHEDULE}"
 fi
 echo "Server Container Image Version: ${IMAGE_VERSION}"
 echo ""
